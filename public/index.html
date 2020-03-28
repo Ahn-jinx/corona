@@ -1,43 +1,194 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="Web site created using create-react-app"
-    />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>React App</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
+<head>
+  <title>Corona Virus Mask Map</title>
+  <link rel="stylesheet" href="../src/index.css">
+  <style>
+    body {
+      background-color: #cce6ff;
+      margin: 20px;
+      width: 900px;
+      height: 900px;
+    }
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+    ;
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
-  </body>
+    body #top {
+      margin: 10px;
+      color: #e6ffff;
+      background-color: #cc6699;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="top" style="
+  text-align: center;
+  font-size: 21px;
+  color: #e6ffff ;
+  background-color: #cc6699;
+  box-shadow: 0 0 10px 0px #2c2c2c;
+  height: 1300px;
+  margin: 20px;
+  width: 100%;
+  border-radius: 10px;">
+    <div style="text-align: center; font-size: 21px; margin-top: 40px; color: #e6ffff ;">Mask Map<div>
+    <div style="text-align: center; font-size: 13px; color: #e6ffff; margin-bottom: 2px;">ver_2020.03.23.</div>
+
+
+      
+      <div id="root"></div>
+      <div id="map" style="width:100%;height:1220px;"></div>
+  </div>
+      <script type="text/javascript" src="https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=dxjwd79uv2">
+      </script>
+
+      <script>
+        let mapCenter;
+        let latitude;
+        let longitude;
+
+        function fetchInfo(lat, lon) {
+          var range = "1000";//추후 가변으로
+          if (map.zoom <= 22) {
+            range = "500";
+          } else if (map.zoom <= 20) {
+            range = "1000";
+          } else if (map.zoom <= 18) {
+            range = "2000";
+          } else if (map.zoom <= 16) {
+            range = "3000";
+          } else if (map.zoom <= 14) {
+            range = "5000";
+          } else if (map.zoom <= 10) {
+            request = false;
+            return;
+          }
+
+          fetch(`https://8oi9s0nnth.apigw.ntruss.com/corona19-masks/v1/storesByGeo/json?lat=${lat}&lng=${lon}&m=${range}`)
+            .then(function (response) {
+              return response.json();
+            })
+            .then(function (myJson) {
+
+              myJson.stores.forEach(element => {
+
+                let stock = ''
+                let stockInfo = ''
+                let opacity = ''
+                if (element.remain_stat === 'empty') {
+                  stockInfo = '매진'
+                  boxColor = 'grey'
+                  stock = '없음'
+                  opacity = '0.1'
+                } else if (!element.remain_stat) {
+                  boxColor = 'grey'
+                  stockInfo = '정보 없음'
+                  stock = '없음'
+                  opacity = '0.1'
+                } else if (element.remain_stat === 'break') {
+                  stockInfo = '판매중지';
+                  boxColor = 'grey'
+                  stock = '없음'
+                  opacity = '0.1'
+                } else if (element.remain_stat === 'few') {
+                  stockInfo = '2개 이상 30개 미만 남았습니다.'
+                  boxColor = '#ff3333'
+                  stock = '있음'
+                  opacity = '0.8'
+                } else if (element.remain_stat === 'some') {
+                  stockInfo = '30개 이상 100개 미만 남았습니다.'
+                  boxColor = '#cca300'
+                  stock = '적당'
+                  opacity = '0.9'
+                } else if (element.remain_stat === 'plenty') {
+                  stockInfo = '100개 이상 남았습니다.'
+                  boxColor = '#33cc33'
+                  stock = '많음'
+                  opacity = '1'
+                }
+                //마커
+                var marker = new naver.maps.Marker({
+                  position: new naver.maps.LatLng(element.lat, element.lng),
+                  map: map,
+                  title: element.name,
+                  icon: {
+                    content: '<div>' +
+                      '<div  style = "color: #e6ffff; border-radius: 5px; background-color: ' + boxColor + '; opacity: ' + opacity + '; border: 1.2 px solid black;">' + stock + '</div>' +
+                      '</div>',
+                    size: new naver.maps.Size(50, 50),
+                    anchor: new naver.maps.Point(28, 52),
+                  }
+
+                });
+
+                //마커_정보박스 내용(바운드체인지)
+                var contentString = [
+                  '<div class="iw_inner" style=" padding: 20px;">',
+                  '   <div style="background-color: #cc6699; width:350px; border-radius: 5px; box-shadow: 0 0 5px 0px #2c2c2c; margin:0 auto;">' + element.name + '</div>',
+                  '   <div style="color: #2c2c2c; text-align: initial;"><p>재고 상황: ' + stockInfo + '<br>',
+                  '   입고된 시간: ' + element.stock_at + '<br>',
+                  '    주소: ' + element.addr + '</p></div>',
+                  '</div>'
+                ].join('');
+
+                //마커_정보박스
+                var infowindow = new naver.maps.InfoWindow({
+                  content: contentString,
+                  backgroundColor: "#eee",
+                  anchorColor: "#eee",
+                });
+
+                //마커_정보박스 온오프
+                naver.maps.Event.addListener(marker, "click", function (e) {
+                  if (infowindow.getMap()) {
+                    infowindow.close();
+                  } else {
+                    infowindow.open(map, marker);
+                  }
+                });
+
+                infowindow.close();
+              });
+            });
+        }
+
+        navigator.geolocation.getCurrentPosition(handleGeoSucces, handleGeoError)
+
+        function handleGeoSucces(position) {
+          latitude = position.coords.latitude;
+          longitude = position.coords.longitude;
+          mapCenter = new naver.maps.LatLng(latitude, longitude)
+          map.setCenter(mapCenter);
+        }
+
+        function handleGeoError(position) {
+          alert('Cannot find you.')
+
+        }
+
+        //지도 자체
+        var mapDiv = document.getElementById('map');
+        var map = new naver.maps.Map(mapDiv, {
+          center: mapCenter,
+          zoom: 16,
+          zoomControl: true, //줌 컨트롤의 표시 여부
+          zoomControlOptions: { //줌 컨트롤의 옵션
+            position: naver.maps.Position.TOP_RIGHT
+          }
+        });
+
+        fetchInfo(latitude, longitude);
+
+        naver.maps.Event.addListener(map, 'bounds_changed', function (bounds) {
+          const newCenter = map.getCenter();
+          const newLat = newCenter.y;
+          const newLon = newCenter.x;
+          fetchInfo(newLat, newLon);
+        });
+
+      </script>
+</body>
+
 </html>
